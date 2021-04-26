@@ -2,16 +2,17 @@ const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
 
-const app = express()
+const app = express() 
 
-app.use(express.static('build'))
-app.use(cors())
-app.use(express.json())
+//middleware
+app.use(express.static('build')) //serve ad express per mostrare elementi statici (index.html javascript ecc)
+app.use(cors()) // abilita il cross-origin resource sharing
+app.use(express.json()) //consente ad express di interpretare json
+morgan.token('data', (req) => JSON.stringify(req.body)) //definisco un campo personalizzato per morgan(generatore di log)
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data')) //genero i log nel formato stabilito
+//fine middleware
 
-morgan.token('data', (req) => JSON.stringify(req.body))
-app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data'))
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 3001 //process.env serve ad heroku la 3001 serve per il locale
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 })
