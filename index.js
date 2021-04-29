@@ -59,13 +59,16 @@ app.get('/api/persons/:id', (request, response) => {
         response.json(person)
     })
 })
-/*
+
 app.get('/info', (request, response) => {
-    //const r = "<div><div>Phonebook has info for " + persons.length + " people</div><div>" + Date() + "</div></div>"
-    const r = `<div><div>Phonebook has info for ${Person.length} people</div><div>${Date()}</div></div>`
-    response.send(r)
+    Person.countDocuments({}, (err, c) => {
+        console.log('Count is ' + c)
+        console.log(typeof c)
+        response.send(`<div><div>Phonebook has infooo for ${c} people</div><div>${Date()}</div></div>`)
+    })
+
 }) 
-*/
+
 app.get('/api/persons', (request, response) => {
     Person.find({}).then(people => {
         response.json(people)
