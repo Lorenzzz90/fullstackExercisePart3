@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 const app = express() 
 
@@ -12,87 +14,81 @@ morgan.token('data', (req) => JSON.stringify(req.body)) //definisco un campo per
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data')) //genero i log nel formato stabilito
 //fine middleware
 
-const PORT = process.env.PORT || 3001 //process.env serve ad heroku la 3001 serve per il locale
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-})
-
-let persons = [
-    {
-        id: 1,
-        name: "Arto Hellas",
-        number: "040-123456"
-    }, 
-    {
-        id: 2,
-        name: "Lorenz",
-        number: "030-123456"
-    }, 
-    {
-        id: 3,
-        name: "Peppe",
-        number: "050-123456"
-    }, 
-    {
-        id: 4,
-        name: "MiaoBau",
-        number: "060-123456"
-    }
-]
-
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
-  }
-
 app.post('/api/persons', (request, response) => {
     const body = request.body
-    if(!body.name) {
-        return response.status(400).json({
-            error: 'name missing'
-        })
-    } else if (!body.number) {
-        return response.status(400).json({
-            error: 'number missing'
-        })
-    } else if (persons.find(p => p.name === body.name)) {
-        return response.status(400).json({
-            error: 'name must be unique'
-        })
-    }
 
-    const person = {
-        id: getRandomInt(10, 100000),
-        name: body.name,
-        number: body.number
+    if (body.name === undefined || body.number === undefined) {
+        return response.status(404).json({
+            error: 'content missing'
+        })
     }
-    persons = persons.concat(person)
-    response.send(person)
+    const person = new Person({
+        name: body.name,
+        number: body.number,
+    })
+    person.save().then(savedPerson => {
+        response.json(savedPerson)
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(p => p.id !== id)
+    Person.findByIdAndRemove(request.params.id)
+        .then(result =>{
+            response.status(204).end()
+        })
+        .catch(error => next(error))
+})
 
-    response.status(204).end()
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+    
+    const person = {
+        name: body.name,
+        number: body.number,
+    }
+
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+        .then(updatedNote => {
+            response.json(updatedNote)
+        })
+        .catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(p => p.id === id)
-    if (!person) {
-        response.status(404).end()
-    }
-    response.json(person)
+    Person.findById(request.params.id).then(person => {
+        response.json(person)
+    })
 })
-
+/*
 app.get('/info', (request, response) => {
     //const r = "<div><div>Phonebook has info for " + persons.length + " people</div><div>" + Date() + "</div></div>"
-    const r = `<div><div>Phonebook has info for ${persons.length} people</div><div>${Date()}</div></div>`
+    const r = `<div><div>Phonebook has info for ${Person.length} people</div><div>${Date()}</div></div>`
     response.send(r)
 }) 
-
+*/
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Person.find({}).then(people => {
+        response.json(people)
+    })
+})
+//per richieste senza route penultimo middleware
+const unknownEndpoint = (request, response) => {
+    response.status(404).send({ error: 'unknown endpoint'})
+  }
+  
+  app.use(unknownEndpoint)
+// errorhandler ultimo middleware
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+  
+    if (error.name === 'CastError') {
+      return response.status(400).send({ error: 'malformatted id'})
+    }
+  }
+  
+  app.use(errorHandler)
+
+const PORT = process.env.PORT
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 })

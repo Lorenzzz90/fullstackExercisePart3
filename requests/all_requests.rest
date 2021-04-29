@@ -5,10 +5,19 @@ GET http://localhost:3001/info
 
 ###
 
-DELETE http://localhost:3001/api/persons/1
+DELETE http://localhost:3001/api/persons/608a05b30c5ddb325cf22211
 
 ###
 POST http://localhost:3001/api/persons 
+content-Type: application/json 
+
+{
+    "name": "Inigo Montoya",
+    "number": "0969654"
+}
+
+###
+POST https://evening-anchorage-98789.herokuapp.com/api/persons 
 content-Type: application/json 
 
 {
