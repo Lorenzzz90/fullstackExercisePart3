@@ -14,14 +14,9 @@ morgan.token('data', (req) => JSON.stringify(req.body)) //definisco un campo per
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :data')) //genero i log nel formato stabilito
 //fine middleware
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
 
-    if (body.name === undefined || body.number === undefined) {
-        return response.status(404).json({
-            error: 'content missing'
-        })
-    }
     const person = new Person({
         name: body.name,
         number: body.number,
@@ -29,6 +24,7 @@ app.post('/api/persons', (request, response) => {
     person.save().then(savedPerson => {
         response.json(savedPerson)
     })
+    .catch(error => next(error))
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -46,8 +42,11 @@ app.put('/api/persons/:id', (request, response, next) => {
         name: body.name,
         number: body.number,
     }
-
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    const opts = {
+         runValidators: true,
+         new: true
+    }
+    Person.findByIdAndUpdate(request.params.id, person, opts)
         .then(updatedNote => {
             response.json(updatedNote)
         })
@@ -86,10 +85,12 @@ const errorHandler = (error, request, response, next) => {
   
     if (error.name === 'CastError') {
       return response.status(400).send({ error: 'malformatted id'})
+    } else if (error.name === 'ValidationError'){
+        return response.status(400).json({ error: error.message})
     }
   }
   
-  app.use(errorHandler)
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
