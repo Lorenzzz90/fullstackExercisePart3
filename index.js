@@ -46,7 +46,7 @@ app.put('/api/persons/:id', (request, response, next) => {
          runValidators: true,
          new: true
     }
-    Person.findByIdAndUpdate(request.params.id, person, opts)
+    Person.findByIdAndUpdate(request.params.id, { number: request.body.number }, opts)
         .then(updatedNote => {
             response.json(updatedNote)
         })
